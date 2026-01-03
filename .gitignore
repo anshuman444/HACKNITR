@@ -1,0 +1,46 @@
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv_auditflow/
+.venv/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Data and Indices
+data/document_store.json
+faiss_index/
+
+# Streamlit
+.streamlit/
+
+# IDEs
+.vscode/
+.idea/
+.gemini/
+
+# Temporary files
+D:/tmp/
+D:/pip_cache/
+reproduce_error.py
+verify_docling_final.py
+*.pdf

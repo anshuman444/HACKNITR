@@ -1,0 +1,14 @@
+pathway
+docling
+langgraph
+langchain
+openai
+streamlit
+nltk
+faiss-cpu
+numpy
+pandas
+ragas
+datasets
+google-generativeai
+python-dotenv
