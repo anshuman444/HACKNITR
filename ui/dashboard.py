@@ -8,199 +8,268 @@ from agents.master_agent import run_master_analysis
 
 # Page Configuration
 st.set_page_config(
-    page_title="AuditFlow | High-Impact Intelligence",
+    page_title="AuditFlow Intelligence Console",
     page_icon="⚖️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# High-Contrast / Dark-ish Styling
+# Premium Intelligence Console Styling
 st.markdown("""
     <style>
-    .main {
-        background-color: #0e1117;
-        color: #ffffff;
-    }
-    .stMetric {
-        background-color: #1e2130;
-        padding: 20px;
-        border-radius: 12px;
-        border: 1px solid #3d4455;
-    }
-    .stTextArea textarea {
-        background-color: #1e2130 !important;
-        color: #ffffff !important;
-        border: 1px solid #3d4455 !important;
-        font-family: 'Courier New', monospace;
-    }
-    .risk-section {
-        background-color: #1e2130;
-        padding: 25px;
-        border-radius: 15px;
-        border: 2px solid #3d4455;
-        margin-bottom: 25px;
-    }
-    .result-box {
-        background-color: #262a3b;
-        padding: 15px;
-        border-radius: 8px;
-        border-left: 5px solid #007bff;
-        margin-top: 15px;
-        font-size: 16px;
-        line-height: 1.6;
-    }
-    .risk-header {
-        font-size: 24px;
-        font-weight: bold;
-        margin-bottom: 10px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    .risk-badge {
-        padding: 8px 18px;
-        border-radius: 25px;
-        font-size: 16px;
-        font-weight: 800;
-        text-transform: uppercase;
-        color: white;
-    }
-    .badge-high { background-color: #ff4b4b; box-shadow: 0 0 15px rgba(255, 75, 75, 0.4); }
-    .badge-medium { background-color: #ffa500; box-shadow: 0 0 15px rgba(255, 165, 0, 0.4); }
-    .badge-low { background-color: #28a745; box-shadow: 0 0 15px rgba(40, 167, 69, 0.4); }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap');
     
-    .evidence-text {
-        color: #a0a8c0;
-        font-style: italic;
-        margin-top: 10px;
-        border-top: 1px solid #3d4455;
-        padding-top: 10px;
+    .main {
+        background-color: #0c0e12;
+        color: #e0e6ed;
+        font-family: 'Inter', sans-serif;
+    }
+    
+    /* Global Container */
+    .console-header {
+        font-family: 'JetBrains Mono', monospace;
+        color: #00d4ff;
+        border-bottom: 2px solid #1f2937;
+        padding-bottom: 10px;
+        margin-bottom: 30px;
+        letter-spacing: 1px;
+    }
+    
+    /* Intelligence Brief Cards */
+    .brief-card {
+        background: linear-gradient(145deg, #161b22, #0d1117);
+        border: 1px solid #30363d;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    
+    .brief-title {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 14px;
+        color: #8b949e;
+        text-transform: uppercase;
+        border-bottom: 1px solid #30363d;
+        padding-bottom: 8px;
+        margin-bottom: 15px;
+    }
+    
+    .brief-content {
+        font-size: 15px;
+        line-height: 1.6;
+        color: #c9d1d9;
+    }
+    
+    .brief-evidence {
+        margin-top: 12px;
+        padding: 10px;
+        background-color: rgba(0, 212, 255, 0.05);
+        border-left: 2px solid #00d4ff;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
+        color: #58a6ff;
+    }
+
+    /* Gauge Container */
+    .gauge-wrapper {
+        text-align: center;
+        margin-bottom: 10px;
+    }
+    
+    .risk-tag {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+        font-weight: bold;
+        padding: 2px 10px;
+        border-radius: 4px;
+        margin-left: 10px;
+    }
+    .tag-high { color: #ff4b4b; border: 1px solid #ff4b4b; background: rgba(255, 75, 75, 0.1); }
+    .tag-medium { color: #ffa500; border: 1px solid #ffa500; background: rgba(255, 165, 0, 0.1); }
+    .tag-low { color: #23d18b; border: 1px solid #23d18b; background: rgba(35, 209, 139, 0.1); }
+    
+    /* Sidebar styling */
+    section[data-testid="stSidebar"] {
+        background-color: #0d1117;
+        border-right: 1px solid #30363d;
+    }
+    
+    /* Input areas */
+    .stTextArea textarea {
+        background-color: #0d1117 !important;
+        border: 1px solid #30363d !important;
+        color: #c9d1d9 !important;
+        font-family: 'JetBrains Mono', monospace !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
+# --- SVG Gauge Helper ---
+def draw_gauge(value, label, level_class):
+    # Map level to color
+    color = "#23d18b" # Default Low
+    if "HIGH" in level_class.upper(): color = "#ff4b4b"
+    elif "MEDIUM" in level_class.upper(): color = "#ffa500"
+    
+    # Calculate needle rotation (0-100 to -90 to 90 degrees)
+    rotation = (value * 1.8) - 90
+    
+    html_content = f"""
+    <html>
+    <head>
+        <style>
+            body {{
+                background-color: transparent;
+                margin: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 120px;
+                overflow: hidden;
+            }}
+            .gauge-wrapper {{
+                text-align: center;
+            }}
+            @keyframes needle-anim {{
+                from {{ transform: rotate(-90deg); }}
+                to {{ transform: rotate({rotation}deg); }}
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="gauge-wrapper">
+            <svg width="200" height="120" viewBox="0 0 200 120">
+                <!-- Background Arc -->
+                <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#21262d" stroke-width="12" stroke-linecap="round"/>
+                <!-- Value Arc (Partial) -->
+                <path d="M 20 100 A 80 80 0 0 1 {20 + (160 * value/100)} 100" fill="none" stroke="{color}" stroke-width="12" stroke-linecap="round" style="opacity: 0.3;"/>
+                
+                <!-- Scale Indicators -->
+                <text x="15" y="115" fill="#8b949e" font-size="10" font-family="monospace">LOW</text>
+                <text x="170" y="115" fill="#8b949e" font-size="10" font-family="monospace">HIGH</text>
+                
+                <!-- Center Label -->
+                <text x="100" y="80" fill="#e0e6ed" font-size="16" font-weight="bold" font-family="sans-serif" text-anchor="middle">{label}</text>
+                <text x="100" y="100" fill="{color}" font-size="12" font-weight="bold" font-family="monospace" text-anchor="middle">{value}% RISK</text>
+                
+                <!-- Needle -->
+                <g transform="translate(100, 100)">
+                    <line x1="0" y1="0" x2="0" y2="-75" stroke="#e0e6ed" stroke-width="3" stroke-linecap="round" 
+                          style="animation: needle-anim 1.5s ease forwards; transform-origin: center bottom;">
+                    </line>
+                    <circle cx="0" cy="0" r="6" fill="#00d4ff"/>
+                </g>
+            </svg>
+        </div>
+    </body>
+    </html>
+    """
+    return html_content
+
 # --- Sidebar ---
 with st.sidebar:
-    st.title("⚖️ AuditFlow")
-    st.markdown("**M&A Risk Intelligence Engine**")
+    st.markdown("<h1 style='color: #00d4ff; font-family: JetBrains Mono;'>AUDITFLOW</h1>", unsafe_allow_html=True)
+    st.markdown("`INTELLIGENCE CONSOLE V2.0`")
     st.markdown("---")
     
     from indexing.document_store import get_all_documents
     docs = get_all_documents()
     
     if not docs:
-        st.info("No documents found in store.")
+        st.info("DATA STORE EMPTY")
     else:
         doc_names = list(docs.keys())
-        # The user requested "no dropdown menu", but for document selection in a list of 50+, 
-        # a selectbox is necessary. I will assume they meant the "expander" dropdowns for results.
-        selected_doc_name = st.selectbox("📁 Select Source Document", ["-- Manual Paste --"] + doc_names)
+        selected_doc_name = st.selectbox("SOURCE SELECTION", ["NONE"] + doc_names)
         
-        if selected_doc_name != "-- Manual Paste --":
+        if selected_doc_name != "NONE":
             selected_doc = docs[selected_doc_name]
-            if st.button("📥 Load Document into Analysis"):
+            if st.button("LOAD TARGET TEXT", use_container_width=True):
                 st.session_state["new_text"] = selected_doc["text"]
                 st.rerun()
 
 # --- Main Interface ---
-st.title("AuditFlow: Risk Intelligence Report")
-st.markdown("Direct analysis of legal and financial deltas between document filings.")
+st.markdown("<div class='console-header'>> SYSTEM STATUS: ONLINE | ANALYSIS MODE: ACCELERATED</div>", unsafe_allow_html=True)
 
-# --- Text Input Section ---
-col1, col2 = st.columns(2)
-with col1:
-    old = st.text_area("📄 Baseline (Previous Filing)", height=220, key="old_text", placeholder="Paste historical document text here...")
-with col2:
-    new = st.text_area("📄 Target (Current Filing)", height=220, value=st.session_state.get("new_text", ""), key="new_text", placeholder="Paste current document text here...")
+# Input Layout
+col_in1, col_in2 = st.columns(2)
+with col_in1:
+    old = st.text_area("BASELINE FILING", height=200, key="old_text", placeholder="INPUT PREVIOUS FILING DATA...")
+with col_in2:
+    new = st.text_area("TARGET FILING", height=200, key="new_text", placeholder="INPUT CURRENT FILING DATA...")
 
-# --- Analysis Action ---
-if st.button("🔥 START COMPREHENSIVE ANALYSIS", type="primary", use_container_width=True):
+# Command Bar
+if st.button("EXECUTE RISK INTELLIGENCE SCAN", type="primary", use_container_width=True):
     if not new:
-        st.error("⚠️ Error: Target document is empty. Please provide text to analyze.")
+        st.error("CRITICAL ERROR: TARGET BUFFER EMPTY")
     else:
-        with st.spinner("🚀 Master Agent is processing... Analyzing Litigation, Covenants, and Verifying Sources."):
+        with st.status("INITIALIZING AGENTS...", expanded=True) as status:
+            st.write("Fetching document deltas...")
+            st.write("Analyzing master risk profile...")
             result = run_master_analysis(old, new)
+            status.update(label="ANALYSIS COMPLETE", state="complete", expanded=False)
         
         if "error" in result:
-            st.error(f"❌ Analysis failed: {result['error']}")
+            st.error(f"SCAN FAILED: {result['error']}")
         else:
-            st.session_state["analysis_result"] = result
-            st.success("🎯 Analysis Complete!")
+            st.session_state["p_analysis"] = result
+            st.success("SCAN SEQUENCE SUCCESSFUL")
 
-# --- Direct Results Rendering (No Dropdowns) ---
-if "analysis_result" in st.session_state:
-    res = st.session_state["analysis_result"]
+# --- Intelligence Output ---
+if "p_analysis" in st.session_state:
+    res = st.session_state["p_analysis"]
     
-    st.markdown("---")
-    st.markdown("## 📊 Agent Intelligence Reports")
+    st.markdown("<h2 class='console-header'>ANALYSIS INTELLIGENCE BRIEF</h2>", unsafe_allow_html=True)
     
-    def get_risk_config(level):
-        level = str(level).upper()
-        if "HIGH" in level: return 100, "HIGH", "badge-high"
-        if "MEDIUM" in level: return 60, "MEDIUM", "badge-medium"
-        return 20, "LOW", "badge-low"
+    # Risk Metrics Control Row
+    met_col1, met_col2 = st.columns(2)
+    
+    def get_risk_meta(level):
+        l = str(level).upper()
+        if "HIGH" in l: return 92, "HIGH", "tag-high"
+        if "MEDIUM" in l: return 54, "MEDIUM", "tag-medium"
+        return 18, "LOW", "tag-low"
 
-    # 1. Litigation Risk Section
-    lit = res.get("litigation", {})
-    l_val, l_lab, l_cls = get_risk_config(lit.get("risk_level", "LOW"))
-    
-    st.markdown(f"""
-        <div class="risk-section">
-            <div class="risk-header">
-                ⚖️ Litigation Risk Analysis: <span class="risk-badge {l_cls}">{l_lab}</span>
-            </div>
-    """, unsafe_allow_html=True)
-    st.progress(l_val/100)
-    st.markdown(f"""
-            <div class="result-box">
-                <b>Detailed Assessment:</b><br/>
-                {lit.get('explanation', 'No explanation provided.')}
-                <div class="evidence-text">
-                    <b>Evidence from source:</b> {lit.get('evidence', 'No specific evidence cited.')}
-                </div>
-            </div>
+    # Litigation Gauge
+    with met_col1:
+        val, lab, tag = get_risk_meta(res.get("litigation", {}).get("risk_level", "LOW"))
+        st.components.v1.html(draw_gauge(val, "LITIGATION", lab), height=130)
+        
+        # Brief
+        lit = res.get("litigation", {})
+        st.markdown(f"""
+        <div class="brief-card">
+            <div class="brief-title">LITIGATION ASSESSMENT <span class="risk-tag {tag}">{lab}</span></div>
+            <div class="brief-content">{lit.get('explanation')}</div>
+            <div class="brief-evidence">> {lit.get('evidence')}</div>
         </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
-    # 2. Covenant Risk Section
-    cov = res.get("covenant", {})
-    c_val, c_lab, c_cls = get_risk_config(cov.get("risk_level", "LOW"))
-    
-    st.markdown(f"""
-        <div class="risk-section">
-            <div class="risk-header">
-                📜 Debt Covenant Analysis: <span class="risk-badge {c_cls}">{c_lab}</span>
-            </div>
-    """, unsafe_allow_html=True)
-    st.progress(c_val/100)
-    st.markdown(f"""
-            <div class="result-box" style="border-left-color: #ffa500;">
-                <b>Detailed Assessment:</b><br/>
-                {cov.get('explanation', 'No explanation provided.')}
-                <div class="evidence-text">
-                    <b>Evidence from source:</b> {cov.get('evidence', 'No specific evidence cited.')}
-                </div>
-            </div>
+    # Covenant Gauge
+    with met_col2:
+        val, lab, tag = get_risk_meta(res.get("covenant", {}).get("risk_level", "LOW"))
+        st.components.v1.html(draw_gauge(val, "COVENANT", lab), height=130)
+        
+        # Brief
+        cov = res.get("covenant", {})
+        st.markdown(f"""
+        <div class="brief-card">
+            <div class="brief-title">COVENANT SENTINEL <span class="risk-tag {tag}">{lab}</span></div>
+            <div class="brief-content">{cov.get('explanation')}</div>
+            <div class="brief-evidence">> {cov.get('evidence')}</div>
         </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
-    # 3. Verification Section
+    # Verification Section
     ver = res.get("verifier", {})
-    v_verdict = str(ver.get("verdict")).upper()
-    v_cls = "badge-verified" if "VERIFIED" in v_verdict else "badge-high"
-    
     st.markdown(f"""
-        <div class="risk-section" style="border-color: #007bff;">
-            <div class="risk-header">
-                ✅ Consistency Verification: <span class="risk-badge {v_cls}">{v_verdict}</span>
-            </div>
-            <div class="result-box" style="border-left-color: #28a745;">
-                {ver.get('explanation', 'No verification details available.')}
-            </div>
-        </div>
+    <div class="brief-card" style="border-top: 2px solid #00d4ff;">
+        <div class="brief-title">INTEGRITY VERIFICATION: {str(ver.get('verdict')).upper()}</div>
+        <div class="brief-content">{ver.get('explanation')}</div>
+    </div>
     """, unsafe_allow_html=True)
 
 else:
     st.markdown("---")
-    st.markdown("### 🚦 System Ready")
-    st.info("💡 **Instructions:** Paste your baseline and target documents above, then click the blue analysis button to generate visual risk reports.")
+    st.markdown("<div style='text-align: center; color: #8b949e; font-family: JetBrains Mono; padding: 40px;'>READY FOR COMMAND. INPUT FILINGS AND EXECUTE SCAN.</div>", unsafe_allow_html=True)
